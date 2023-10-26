@@ -42,7 +42,7 @@
       chart.data.labels = [...Array(loanTerm)].map((_, i) => i + 1);
       chart.data.datasets[0].data = partitionToYears(principalData);
       chart.data.datasets[1].data = partitionToYears(interestData);
-      chart.data.datasets[2].data = partitionToYears(balanceData);
+      chart.data.datasets[2].data = balanceData.filter((_, i) => i % 12 === 11);
       chart.update();
     }
   }
