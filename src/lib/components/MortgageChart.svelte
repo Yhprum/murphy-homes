@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { currency } from "$lib/formatters";
   import Chart from "chart.js/auto";
   import { onMount } from "svelte";
 
@@ -16,6 +17,13 @@
   let balanceData: number[] = [];
   let labels: number[] = [];
 
+  function partitionToYears(array: number[]) {
+    return array.reduce((prev, cur, i) => {
+      prev[Math.floor(i / 12)] = (prev[Math.floor(i / 12)] || 0) + cur;
+      return prev;
+    }, [] as number[]);
+  }
+
   $: {
     interestData = [];
     principalData = [];
@@ -31,9 +39,10 @@
     }
     sixMonth = { interest: interestData[6], principal: principalData[6] };
     if (chart) {
-      chart.data.datasets[0].data = principalData;
-      chart.data.datasets[1].data = interestData;
-      chart.data.datasets[2].data = balanceData;
+      chart.data.labels = [...Array(loanTerm)].map((_, i) => i + 1);
+      chart.data.datasets[0].data = partitionToYears(principalData);
+      chart.data.datasets[1].data = partitionToYears(interestData);
+      chart.data.datasets[2].data = partitionToYears(balanceData);
       chart.update();
     }
   }
@@ -59,6 +68,7 @@
             label: "Balance",
             data: balanceData,
             yAxisID: "yBalance",
+            pointStyle: false,
           },
         ],
         labels: labels,
@@ -66,6 +76,10 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: {
+          intersect: false,
+          mode: "index",
+        },
         scales: {
           x: {
             stacked: true,
@@ -73,10 +87,31 @@
           y: {
             stacked: true,
             min: 0,
+            title: {
+              display: true,
+              text: "Payments",
+            },
           },
           yBalance: {
             position: "right",
             min: 0,
+            grid: {
+              display: false,
+            },
+            title: {
+              display: true,
+              text: "Balance",
+            },
+          },
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              title: (context) => "Year " + context[0].label,
+              label: function (context) {
+                return context.dataset.label + ": " + currency(context.parsed.y);
+              },
+            },
           },
         },
       },
